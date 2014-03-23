@@ -2,28 +2,49 @@
 Twelfie tests!
 """
 import os
+import pytest
+from unittest.mock import patch, Mock
 
-from mock import patch
+import twitter
 
 import twelfie
 
 
+@pytest.fixture
+def api():
+    """A Twitter API mock."""
+    return Mock(spec=twitter.Twitter)
+
+
 class TestTwelfie(object):
     """Twelfie!"""
-    @patch('twelfie.tweepy')
-    def test_api(selfie, tweepy):
+    @patch('twelfie.twitter')
+    def test_api(selfie, twitter):
         """Should initialize the API with stuff from the environment."""
-        auth = tweepy.OAuthHandler.return_value
+        auth = twitter.OAuth.return_value
 
         with patch.dict(os.environ, {
-                    'API_KEY': 'test_key',
-                    'API_SECRET': 'test_secret',
                     'AUTH_KEY': 'test_auth_key',
                     'AUTH_SECRET': 'test_auth_secret',
+                    'API_KEY': 'test_key',
+                    'API_SECRET': 'test_secret',
                 }):
             api = twelfie.init_api()
 
-        tweepy.OAuthHandler.assert_called_with('test_key', 'test_secret')
-        auth.set_access_token.assert_called_with('test_auth_key', 'test_auth_secret')
-        tweepy.API.assert_called_with(auth)
-        assert api == tweepy.API.return_value
+        twitter.OAuth.assert_called_with(
+            'test_auth_key', 'test_auth_secret',
+            'test_key', 'test_secret',
+        )
+        twitter.Twitter.assert_called_with(auth)
+        assert api == twitter.Twitter.return_value
+
+class TestTweeter(object):
+    """The Tweeter class."""
+    def test_init(selfie, api):
+        """Should take an API client on init."""
+        tweeter = twelfie.Tweeter(api)
+
+        assert tweeter.api == api
+
+    def test_guess_next_id(selfie, api):
+        """Should try to guess at the next ID based on the previous ids."""

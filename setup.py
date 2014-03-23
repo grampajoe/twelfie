@@ -22,11 +22,20 @@ setup(
     author='Joe Friedl <joe@joefriedl.net>',
     pymodules=['twelfie'],
     install_requires=[
-        'tweepy==2.2',
+        'twitter==1.14.1',
     ],
     tests_require=[
         'pytest',
-        'mock',
     ],
     cmdclass={'test': PyTest},
+    classifiers=[
+        "Development Status :: 1 - Planning",
+        "Environment :: Console",
+        "Intended Audience :: Science/Research",
+        "License :: OSI Approved :: BSD License",
+        "Natural Language :: English",
+        "Operating System :: OS Independent",
+        "Programming Language :: Python :: 3.4",
+        "Topic :: Artistic Software",
+    ],
 )
