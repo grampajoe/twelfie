@@ -27,6 +27,7 @@ def init_api():
 
 def send_mail():
     """This will eventually send an email screaming and yelling."""
+    log.info('I DID IT!')
 
 
 class Tweeter(object):
