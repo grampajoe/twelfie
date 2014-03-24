@@ -3,17 +3,62 @@ Twelfie tests!
 """
 import os
 import pytest
-from unittest.mock import patch, Mock
+import random
+import time
+
+from statistics import mean, stdev
+from unittest.mock import patch, Mock, call
 
 import twitter
 
 import twelfie
 
 
+class Explosion(Exception):
+    """Obviously necessary."""
+    pass
+
+
 @pytest.fixture
 def api():
     """A Twitter API mock."""
-    return Mock(spec=twitter.Twitter)
+    twitter = Mock()
+
+    twitter.account.settings.return_value = {
+        'screen_name': 'hello_friend',
+    }
+
+    twitter.statuses.update.return_value = {
+        'id': '3',
+    }
+
+    return twitter
+
+
+@pytest.fixture
+def tweeter(api):
+    """A tweeter!"""
+    return twelfie.Tweeter(api)
+
+
+@pytest.fixture
+def timebomb():
+    """It's time.sleep, but it has a terrible secret..."""
+    class TimeBomb(Mock):
+        def __init__(selfie, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            selfie.iterations = 100
+
+            def oh_my_god():
+                """Oh... my... god..."""
+                for i in range(selfie.iterations - 1):
+                    yield
+
+                raise Explosion('KABOOM!!!!!!!')
+
+            selfie.side_effect = oh_my_god()
+
+    return TimeBomb()
 
 
 class TestTwelfie(object):
@@ -38,13 +83,118 @@ class TestTwelfie(object):
         twitter.Twitter.assert_called_with(auth)
         assert api == twitter.Twitter.return_value
 
+
 class TestTweeter(object):
     """The Tweeter class."""
     def test_init(selfie, api):
-        """Should take an API client on init."""
+        """Should take an API client on init and initialize ids."""
         tweeter = twelfie.Tweeter(api)
 
         assert tweeter.api == api
+        assert tweeter.ids == []
 
-    def test_guess_next_id(selfie, api):
+    def test_username(selfie, tweeter):
+        """Should use the API to get its username."""
+        username = tweeter.username
+
+        assert username == tweeter.api.account.settings()['screen_name']
+
+    def test_guess_next_id(selfie, tweeter):
         """Should try to guess at the next ID based on the previous ids."""
+        tweeter.ids = [random.randint(0, 1000) for i in range(10)]
+
+        diffs = [
+            tweeter.ids[i] - tweeter.ids[i - 1]
+            for i in range(len(tweeter.ids))
+        ]
+        std_deviation = stdev(diffs)
+        average = mean(diffs)
+
+        # The next ID should be the last ID plus the average difference
+        # plus or minus a random value within the standard deviation of
+        # the differences. I have no idea whether that makes sense.
+        for i in range(1000):
+            next_id = tweeter.guess_next_id()
+
+            assert next_id >= tweeter.ids[-1] + average - std_deviation
+            assert next_id <= tweeter.ids[-1] + average + std_deviation
+
+    def test_guess_first_ids(selfie, tweeter):
+        """Should not attempt to guess the first or second ids."""
+        assert tweeter.guess_next_id() is None
+
+        tweeter.ids.append(3)
+        assert tweeter.guess_next_id() is None
+
+        tweeter.ids.append(9001)
+        assert isinstance(tweeter.guess_next_id(), int)
+
+    def test_tweet_interval(selfie, tweeter, timebomb):
+        """Should tweet at 90 second intervals."""
+        tweeter.guess_next_id = Mock(return_value=1134)
+
+        try:
+            tweeter.start_tweeting(sleep=timebomb)
+        except Explosion:
+            pass  # So sad...
+
+        for call_num in range(tweeter.api.statuses.update.call_count):
+            call = tweeter.api.statuses.update.mock_calls[call_num]
+
+            assert call == call(
+                status='BEHOLD! A link to this very tweet! '
+                    'https://twitter.com/hello_friend/status/1134',
+            )
+
+        assert tweeter.api.statuses.update.call_count == 100
+        assert tweeter.ids == [3] * tweeter.api.statuses.update.call_count
+
+        for call in timebomb.mock_calls:
+            assert call == call(90)
+
+        assert timebomb.call_count == 100
+
+    def test_tweet_starting_out(self, tweeter, timebomb):
+        """Should just make a couple of IDs when it's starting out."""
+        timebomb.iterations = 2
+
+        try:
+            tweeter.start_tweeting(sleep=timebomb)
+        except Explosion:
+            pass
+
+        assert tweeter.api.statuses.update.call_count == 2
+        for call in tweeter.api.statuses.update.mock_calls:
+            _, args, kwargs = call
+            assert 'None' not in kwargs['status'], 'Should not tweet a dumb thing.'
+
+    def test_tweet_failure(selfie, tweeter, timebomb):
+        """Should delete failed attempts."""
+        timebomb.iterations = 1
+        tweeter.ids = [1, 2, 3]
+        tweeter.api.statuses.update.return_value['id'] = '8'  # Carmine!!!!
+
+        try:
+            tweeter.start_tweeting(sleep=timebomb)
+        except Explosion:
+            pass
+
+        assert tweeter.api.statuses.update.call_count == 1
+        assert tweeter.api.statuses.destroy.call_count == 1
+        tweeter.api.statuses.destroy.assert_called_with(_id='8')
+
+    @patch('twelfie.send_mail')
+    def test_tweet_success(selfie, send_mail, tweeter, timebomb):
+        """Should cry out with joy upon success."""
+        tweeter.ids = [1, 2, 3]
+        tweeter.guess_next_id = Mock(return_value=101)
+        tweeter.api.statuses.update.side_effect = (
+            {'id': '99'}, {'id': '100'}, {'id': '101'},
+        )
+
+        try:
+            tweeter.start_tweeting(sleep=timebomb)
+        except StopIteration:
+            pass
+
+        assert send_mail.called
