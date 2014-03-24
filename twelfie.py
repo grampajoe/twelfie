@@ -27,7 +27,6 @@ def init_api():
 
 def send_mail():
     """This will eventually send an email screaming and yelling."""
-    raise Exception('Stop!!!!!!')
 
 
 class Tweeter(object):
@@ -103,6 +102,7 @@ class Tweeter(object):
                     selfie.api.statuses.destroy(id=tweet['id'], _method='POST')
                 else:
                     send_mail()  # Omg!!!!!!!!!!!
+                    break
 
             selfie.ids.append(int(tweet['id']))
 
