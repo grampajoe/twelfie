@@ -3,12 +3,17 @@ Twelfie!
 
 This little script tries to create a tweet that links to itself.
 """
+import logging
 import os
 import random
 import time
-from statistics import mean, stdev
+from statistics import mean, stdev, variance
 
 import twitter
+
+
+log = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
 
 
 def init_api():
@@ -17,7 +22,7 @@ def init_api():
         os.environ['AUTH_KEY'], os.environ['AUTH_SECRET'],
         os.environ['API_KEY'], os.environ['API_SECRET'],
     )
-    return twitter.Twitter(auth)
+    return twitter.Twitter(auth=auth)
 
 
 def send_mail():
@@ -65,6 +70,11 @@ class Tweeter(object):
             int(average + deviation),
         )
 
+        log.info(
+            '%s tweets, diff variance: %s'
+            % (len(selfie.ids), variance(diffs)),
+        )
+
         return selfie.ids[-1] + maybe_next_diff
 
     def start_tweeting(selfie, sleep=time.sleep):
@@ -73,9 +83,15 @@ class Tweeter(object):
 
         while True:
             next_id = selfie.guess_next_id()
+
+            log.info('Guessing: %s' % next_id)
+
             if next_id is None:
-                tweet = selfie.api.statuses.update(status='Hmm...')
-                selfie.api.statuses.destroy(_id=tweet['id'])
+                tweet = selfie.api.statuses.update(
+                    status='%s?'
+                    % ('First' if not len(selfie.ids) else 'Second'),
+                )
+                selfie.api.statuses.destroy(id=tweet['id'], _method='POST')
             else:
                 next_link = 'https://twitter.com/%s/status/%s' % (username, next_id)
 
@@ -84,7 +100,7 @@ class Tweeter(object):
                 )
 
                 if tweet['id'] != str(next_id):
-                    selfie.api.statuses.destroy(_id=tweet['id'])
+                    selfie.api.statuses.destroy(id=tweet['id'], _method='POST')
                 else:
                     send_mail()  # Omg!!!!!!!!!!!
 
@@ -95,5 +111,6 @@ class Tweeter(object):
 
 if __name__ == '__main__':
     # It begins...
+    log.info('Starting...')
     api = init_api()
     Tweeter(api).start_tweeting()

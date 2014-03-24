@@ -80,7 +80,7 @@ class TestTwelfie(object):
             'test_auth_key', 'test_auth_secret',
             'test_key', 'test_secret',
         )
-        twitter.Twitter.assert_called_with(auth)
+        twitter.Twitter.assert_called_with(auth=auth)
         assert api == twitter.Twitter.return_value
 
 
@@ -163,10 +163,10 @@ class TestTweeter(object):
         except Explosion:
             pass
 
-        assert tweeter.api.statuses.update.call_count == 2
-        for call in tweeter.api.statuses.update.mock_calls:
-            _, args, kwargs = call
-            assert 'None' not in kwargs['status'], 'Should not tweet a dumb thing.'
+        tweeter.api.statuses.update.assert_has_calls([
+            call(status="First?"),
+            call(status="Second?"),
+        ])
 
     def test_tweet_failure(selfie, tweeter, timebomb):
         """Should delete failed attempts."""
@@ -181,7 +181,7 @@ class TestTweeter(object):
 
         assert tweeter.api.statuses.update.call_count == 1
         assert tweeter.api.statuses.destroy.call_count == 1
-        tweeter.api.statuses.destroy.assert_called_with(_id='8')
+        tweeter.api.statuses.destroy.assert_called_with(id='8', _method='POST')
 
     @patch('twelfie.send_mail')
     def test_tweet_success(selfie, send_mail, tweeter, timebomb):
