@@ -77,33 +77,44 @@ class Tweeter(object):
 
         return selfie.ids[-1] + maybe_next_diff
 
+    def predict_the_future(selfie, next_id):
+        """Try to post a prescient tweet.
+
+        Post a regular link if we have an id, else start some seed tweets.
+        The seed tweets need to vary or Twitter will tell us we already
+        tweeted them.
+        """
+        if next_id:
+            next_link = 'https://twitter.com/%s/status/%s' % (selfie.username, next_id)
+            message = 'BEHOLD! A link to this very tweet! %s' % next_link
+        elif not selfie.ids:
+            message = 'First?'
+        else:
+            message = 'Second?'
+
+        tweet = selfie.api.statuses.update(status=message)
+
+        # Delete the tweet if it was a throwaway or it didn't work.
+        if next_id is None or tweet['id'] != str(next_id):
+            try:
+                selfie.api.statuses.destroy(id=tweet['id'], _method='POST')
+            except:
+                log.error('Delete failed!')
+
+        return tweet
+
     def start_tweeting(selfie, sleep=time.sleep):
         """Carry out our terrible purpose."""
-        username = selfie.username
-
         while True:
             next_id = selfie.guess_next_id()
 
             log.info('Guessing: %s' % next_id)
 
-            if next_id is None:
-                tweet = selfie.api.statuses.update(
-                    status='%s?'
-                    % ('First' if not len(selfie.ids) else 'Second'),
-                )
-                selfie.api.statuses.destroy(id=tweet['id'], _method='POST')
-            else:
-                next_link = 'https://twitter.com/%s/status/%s' % (username, next_id)
+            tweet = selfie.predict_the_future(next_id)
 
-                tweet = selfie.api.statuses.update(
-                    status='BEHOLD! A link to this very tweet! %s' % next_link
-                )
-
-                if tweet['id'] != str(next_id):
-                    selfie.api.statuses.destroy(id=tweet['id'], _method='POST')
-                else:
-                    send_mail()  # Omg!!!!!!!!!!!
-                    break
+            if tweet['id'] == str(next_id):
+                send_mail()  # Omg!!!!!!!!!!!
+                break
 
             selfie.ids.append(int(tweet['id']))
 
