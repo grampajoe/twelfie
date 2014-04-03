@@ -1,6 +1,7 @@
 """
 Twelfie tests!
 """
+import logging
 import os
 import pytest
 import random
@@ -12,6 +13,51 @@ from unittest.mock import patch, Mock, call
 import twitter
 
 import twelfie
+
+
+class TestLogHandler(logging.Handler):
+    """A logging handler that holds onto messages."""
+    def __init__(selfie, *args, **kwargs):
+        selfie.reset()
+        super().__init__(*args, **kwargs)
+
+    def emit(selfie, record):
+        """Record a message in our secret stash."""
+        selfie.stash[record.levelname.lower()].append(record.getMessage())
+
+    def reset(selfie):
+        """Dump out our horde of log records."""
+        selfie.stash = {
+            'debug': [],
+            'info': [],
+            'warning': [],
+            'error': [],
+            'critical': [],
+        }
+
+    def assert_has_message(selfie, message, level=None):
+        """Assert that a message exists in our stash."""
+        error_message = "Message '%s' not found" % message
+
+        if level is not None:
+            error_message += ' for level %s' % level
+
+            messages = selfie.stash[level]
+        else:
+            # Zip all the messages up
+            messages = [
+                message
+                for key, messages in selfie.stash.items()
+                for message in messages
+            ]
+
+        error_message += ', got: \n%s' % '\n'.join(messages)
+
+        assert message in messages, error_message
+
+
+test_log_handler = TestLogHandler()
+twelfie.log.addHandler(test_log_handler)
 
 
 class Explosion(Exception):
@@ -198,3 +244,13 @@ class TestTweeter(object):
             pass
 
         assert send_mail.called
+
+    def test_delete_fail(selfie, tweeter):
+        """Should fail to delete nicely."""
+        tweeter.api.statuses.destroy.side_effect = Explosion
+        test_log_handler.reset()
+
+        tweet = tweeter.predict_the_future(9000)
+
+        assert tweet == tweeter.api.statuses.update.return_value
+        test_log_handler.assert_has_message('Delete failed!', level='error')

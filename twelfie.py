@@ -96,7 +96,10 @@ class Tweeter(object):
 
         # Delete the tweet if it was a throwaway or it didn't work.
         if next_id is None or tweet['id'] != str(next_id):
-            selfie.api.statuses.destroy(id=tweet['id'], _method='POST')
+            try:
+                selfie.api.statuses.destroy(id=tweet['id'], _method='POST')
+            except:
+                log.error('Delete failed!')
 
         return tweet
 
