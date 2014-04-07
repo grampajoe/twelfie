@@ -86,7 +86,7 @@ class Tweeter(object):
             try:
                 selfie.api.statuses.destroy(id=tweet['id'], _method='POST')
             except:
-                log.error('Delete failed!')
+                log.exception('Delete failed!')
             else:
                 selfie.garbage.remove(tweet)
 
