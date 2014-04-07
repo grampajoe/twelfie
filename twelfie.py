@@ -80,7 +80,9 @@ class Tweeter(object):
 
     def collect_garbage(selfie):
         """Clean up our mess."""
-        for tweet in selfie.garbage:
+        trash = list(selfie.garbage)
+
+        for tweet in trash:
             try:
                 selfie.api.statuses.destroy(id=tweet['id'], _method='POST')
             except:

@@ -82,6 +82,8 @@ def api():
 
     twitter.statuses.update.side_effect = tweet_generator()
 
+    twitter.statuses.delete.return_value = True
+
     return twitter
 
 
@@ -288,3 +290,11 @@ class TestTweeter(object):
             call(id=second_tweet['id'], _method='POST'),
             call(id=third_tweet['id'], _method='POST'),
         ])
+
+    def test_remove_garbage(selfie, tweeter):
+        """Should remove all the garbage when it gets cleaned up."""
+        tweeter.garbage = [{'id': '1'}, {'id': '2'}, {'id': '3'}]
+
+        tweeter.collect_garbage()
+
+        assert len(tweeter.garbage) == 0
