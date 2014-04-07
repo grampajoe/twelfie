@@ -74,9 +74,13 @@ def api():
         'screen_name': 'hello_friend',
     }
 
-    twitter.statuses.update.return_value = {
-        'id': '3',
-    }
+    def tweet_generator():
+        tweet_id = 0
+        while True:
+            tweet_id += 1
+            yield {'id': tweet_id}
+
+    twitter.statuses.update.side_effect = tweet_generator()
 
     return twitter
 
@@ -193,7 +197,9 @@ class TestTweeter(object):
             )
 
         assert tweeter.api.statuses.update.call_count == 100
-        assert tweeter.ids == [3] * tweeter.api.statuses.update.call_count
+        assert tweeter.ids == list(range(
+            1, tweeter.api.statuses.update.call_count + 1
+        ))
 
         for call in timebomb.mock_calls:
             assert call == call(90)
@@ -218,7 +224,7 @@ class TestTweeter(object):
         """Should delete failed attempts."""
         timebomb.iterations = 1
         tweeter.ids = [1, 2, 3]
-        tweeter.api.statuses.update.return_value['id'] = '8'  # Carmine!!!!
+        tweeter.api.statuses.update.side_effect = [{'id': '8'}]  # Carmine!!!!
 
         try:
             tweeter.start_tweeting(sleep=timebomb)
@@ -247,6 +253,7 @@ class TestTweeter(object):
 
     def test_delete_fail(selfie, tweeter):
         """Should fail to delete nicely."""
+        tweeter.api.statuses.update.return_value = {'id': 1}
         tweeter.api.statuses.destroy.side_effect = Explosion
         test_log_handler.reset()
 
@@ -254,3 +261,30 @@ class TestTweeter(object):
 
         assert tweet == tweeter.api.statuses.update.return_value
         test_log_handler.assert_has_message('Delete failed!', level='error')
+
+    def test_delete_retry(selfie, tweeter):
+        """Should retry all failed deletions."""
+        tweeter.api.statuses.destroy.side_effect = Explosion
+
+        first_tweet = tweeter.predict_the_future(9000)
+
+        tweeter.api.statuses.destroy.assert_has_calls([
+            call(id=first_tweet['id'], _method='POST'),
+        ])
+        tweeter.api.statuses.destroy.reset_mock()
+
+        second_tweet = tweeter.predict_the_future(8000)
+
+        tweeter.api.statuses.destroy.assert_has_calls([
+            call(id=first_tweet['id'], _method='POST'),
+            call(id=second_tweet['id'], _method='POST'),
+        ])
+        tweeter.api.statuses.destroy.reset_mock()
+
+        third_tweet = tweeter.predict_the_future(7000)
+
+        tweeter.api.statuses.destroy.assert_has_calls([
+            call(id=first_tweet['id'], _method='POST'),
+            call(id=second_tweet['id'], _method='POST'),
+            call(id=third_tweet['id'], _method='POST'),
+        ])

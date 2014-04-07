@@ -39,6 +39,7 @@ class Tweeter(object):
     def __init__(selfie, api):
         selfie.api = api
         selfie.ids = []
+        selfie.garbage = []
 
         selfie._username = None
 
@@ -77,6 +78,16 @@ class Tweeter(object):
 
         return selfie.ids[-1] + maybe_next_diff
 
+    def collect_garbage(selfie):
+        """Clean up our mess."""
+        for tweet in selfie.garbage:
+            try:
+                selfie.api.statuses.destroy(id=tweet['id'], _method='POST')
+            except:
+                log.error('Delete failed!')
+            else:
+                selfie.garbage.remove(tweet)
+
     def predict_the_future(selfie, next_id):
         """Try to post a prescient tweet.
 
@@ -96,10 +107,9 @@ class Tweeter(object):
 
         # Delete the tweet if it was a throwaway or it didn't work.
         if next_id is None or tweet['id'] != str(next_id):
-            try:
-                selfie.api.statuses.destroy(id=tweet['id'], _method='POST')
-            except:
-                log.error('Delete failed!')
+            selfie.garbage.append(tweet)
+
+        selfie.collect_garbage()
 
         return tweet
 
