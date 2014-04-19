@@ -25,11 +25,6 @@ def init_api():
     return twitter.Twitter(auth=auth)
 
 
-def send_mail():
-    """This will eventually send an email screaming and yelling."""
-    log.info('I DID IT!')
-
-
 class Tweeter(object):
     """A tweeter? It tweets.
 
@@ -52,6 +47,14 @@ class Tweeter(object):
             selfie._username = account['screen_name']
 
         return selfie._username
+
+    def holy_crap(selfie, tweet_id):
+        """This is called when success happens!"""
+        tweet_url = 'https://twitter.com/%s/status/%s' % (selfie.username, tweet_id)
+        message = 'Holy crap!!! I did it!!! %s' % tweet_url
+        selfie.api.statuses.update(status=message)
+
+        log.info('I DID IT!')
 
     def guess_next_id(selfie):
         """Guesses the next ID with math."""
@@ -125,7 +128,7 @@ class Tweeter(object):
             tweet = selfie.predict_the_future(next_id)
 
             if tweet['id'] == str(next_id):
-                send_mail()  # Omg!!!!!!!!!!!
+                selfie.holy_crap(tweet['id'])  # Omg!!!!!!!!!!!
                 break
 
             selfie.ids.append(int(tweet['id']))

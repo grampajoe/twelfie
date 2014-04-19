@@ -237,8 +237,7 @@ class TestTweeter(object):
         assert tweeter.api.statuses.destroy.call_count == 1
         tweeter.api.statuses.destroy.assert_called_with(id='8', _method='POST')
 
-    @patch('twelfie.send_mail')
-    def test_tweet_success(selfie, send_mail, tweeter, timebomb):
+    def test_tweet_success(selfie, tweeter, timebomb):
         """Should cry out with joy upon success."""
         tweeter.ids = [1, 2, 3]
         tweeter.guess_next_id = Mock(return_value=101)
@@ -246,12 +245,14 @@ class TestTweeter(object):
             {'id': '99'}, {'id': '100'}, {'id': '101'},
         )
 
+        tweeter.holy_crap = Mock()
+
         try:
             tweeter.start_tweeting(sleep=timebomb)
         except StopIteration:
             pass
 
-        assert send_mail.called
+        tweeter.holy_crap.assert_called_with('101')
 
     def test_delete_fail(selfie, tweeter):
         """Should fail to delete nicely."""
