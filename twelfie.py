@@ -56,16 +56,20 @@ class Tweeter(object):
 
         log.info('I DID IT!')
 
+    def get_diffs(selfie):
+        """Returns the differences between tweet IDs."""
+        return [
+            selfie.ids[i] - selfie.ids[i - 1]
+            for i in range(len(selfie.ids))
+        ]
+
     def guess_next_id(selfie):
         """Guesses the next ID with math."""
         if len(selfie.ids) < 2:
             # Nuh uh
             return
 
-        diffs = [
-            selfie.ids[i] - selfie.ids[i - 1]
-            for i in range(len(selfie.ids))
-        ]
+        diffs = selfie.get_diffs()
         deviation = stdev(diffs)
         average = mean(diffs)
 
@@ -131,7 +135,15 @@ class Tweeter(object):
                 selfie.holy_crap(tweet['id'])  # Omg!!!!!!!!!!!
                 break
             elif next_id is not None:
-                log.info('Aw, poo, I was off by %s...' % abs(int(tweet['id']) - next_id))
+                error = abs(int(tweet['id']) - next_id)
+                message = 'Aw, poo, I was off by %s.' % error
+
+                if len(selfie.ids) >= 2:
+                    diffs = selfie.get_diffs()
+                    deviation = stdev(diffs)
+                    message += ' That\'s %s standard deviations.' % (error/deviation)
+
+                log.info(message)
 
             selfie.ids.append(int(tweet['id']))
 
