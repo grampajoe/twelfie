@@ -130,6 +130,8 @@ class Tweeter(object):
             if tweet['id'] == str(next_id):
                 selfie.holy_crap(tweet['id'])  # Omg!!!!!!!!!!!
                 break
+            elif next_id is not None:
+                log.info('Aw, poo, I was off by %s...' % abs(int(tweet['id']) - next_id))
 
             selfie.ids.append(int(tweet['id']))
 
