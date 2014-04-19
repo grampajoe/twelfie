@@ -143,7 +143,7 @@ class TestTweeter(object):
         tweeter = twelfie.Tweeter(api)
 
         assert tweeter.api == api
-        assert tweeter.ids == []
+        assert tweeter.tweets == []
 
     def test_username(selfie, tweeter):
         """Should use the API to get its username."""
@@ -153,12 +153,16 @@ class TestTweeter(object):
 
     def test_guess_next_id(selfie, tweeter):
         """Should try to guess at the next ID based on the previous ids."""
-        tweeter.ids = [random.randint(0, 1000) for i in range(10)]
+        tweeter.tweets = [
+            {'time': random.randint(0, 1000), 'id': random.randint(0, 1000)}
+            for i in range(10)
+        ]
 
         diffs = [
-            tweeter.ids[i] - tweeter.ids[i - 1]
-            for i in range(len(tweeter.ids))
+            tweeter.tweets[i]['id'] - tweeter.tweets[i - 1]['id']
+            for i in range(len(tweeter.tweets))
         ]
+
         std_deviation = stdev(diffs)
         average = mean(diffs)
 
@@ -168,17 +172,17 @@ class TestTweeter(object):
         for i in range(1000):
             next_id = tweeter.guess_next_id()
 
-            assert next_id >= tweeter.ids[-1] + average - std_deviation
-            assert next_id <= tweeter.ids[-1] + average + std_deviation
+            assert next_id >= tweeter.tweets[-1]['id'] + average - std_deviation
+            assert next_id <= tweeter.tweets[-1]['id'] + average + std_deviation
 
     def test_guess_first_ids(selfie, tweeter):
         """Should not attempt to guess the first or second ids."""
         assert tweeter.guess_next_id() is None
 
-        tweeter.ids.append(3)
+        tweeter.tweets.append({'time': 100, 'id': 3})
         assert tweeter.guess_next_id() is None
 
-        tweeter.ids.append(9001)
+        tweeter.tweets.append({'time': 200, 'id': 9001})
         assert isinstance(tweeter.guess_next_id(), int)
 
     def test_tweet_interval(selfie, tweeter, timebomb):
@@ -199,9 +203,7 @@ class TestTweeter(object):
             )
 
         assert tweeter.api.statuses.update.call_count == 100
-        assert tweeter.ids == list(range(
-            1, tweeter.api.statuses.update.call_count + 1
-        ))
+        assert len(tweeter.tweets) == tweeter.api.statuses.update.call_count
 
         for call in timebomb.mock_calls:
             assert call == call(90)
@@ -225,7 +227,11 @@ class TestTweeter(object):
     def test_tweet_failure(selfie, tweeter, timebomb):
         """Should delete failed attempts."""
         timebomb.iterations = 1
-        tweeter.ids = [1, 2, 3]
+        tweeter.tweets = [
+            {'time': 1, 'id': 1},
+            {'time': 2, 'id': 2},
+            {'time': 3, 'id': 3},
+        ]
         tweeter.api.statuses.update.side_effect = [{'id': '8'}]  # Carmine!!!!
 
         try:
@@ -239,7 +245,11 @@ class TestTweeter(object):
 
     def test_tweet_success(selfie, tweeter, timebomb):
         """Should cry out with joy upon success."""
-        tweeter.ids = [1, 2, 3]
+        tweeter.tweets = [
+            {'time': 1, 'id': 1},
+            {'time': 2, 'id': 2},
+            {'time': 3, 'id': 3},
+        ]
         tweeter.guess_next_id = Mock(return_value=101)
         tweeter.api.statuses.update.side_effect = (
             {'id': '99'}, {'id': '100'}, {'id': '101'},

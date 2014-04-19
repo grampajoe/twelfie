@@ -33,7 +33,7 @@ class Tweeter(object):
     """
     def __init__(selfie, api):
         selfie.api = api
-        selfie.ids = []
+        selfie.tweets = []
         selfie.garbage = []
 
         selfie._username = None
@@ -59,13 +59,13 @@ class Tweeter(object):
     def get_diffs(selfie):
         """Returns the differences between tweet IDs."""
         return [
-            selfie.ids[i] - selfie.ids[i - 1]
-            for i in range(len(selfie.ids))
+            selfie.tweets[i]['id'] - selfie.tweets[i - 1]['id']
+            for i in range(len(selfie.tweets))
         ]
 
     def guess_next_id(selfie):
         """Guesses the next ID with math."""
-        if len(selfie.ids) < 2:
+        if len(selfie.tweets) < 2:
             # Nuh uh
             return
 
@@ -80,10 +80,10 @@ class Tweeter(object):
 
         log.info(
             '%s tweets, diff standard deviation: %s'
-            % (len(selfie.ids), deviation),
+            % (len(selfie.tweets), deviation),
         )
 
-        return selfie.ids[-1] + maybe_next_diff
+        return selfie.tweets[-1]['id'] + maybe_next_diff
 
     def collect_garbage(selfie):
         """Clean up our mess."""
@@ -107,7 +107,7 @@ class Tweeter(object):
         if next_id:
             next_link = 'https://twitter.com/%s/status/%s' % (selfie.username, next_id)
             message = 'BEHOLD! A link to this very tweet! %s' % next_link
-        elif not selfie.ids:
+        elif not selfie.tweets:
             message = 'First?'
         else:
             message = 'Second?'
@@ -138,14 +138,14 @@ class Tweeter(object):
                 error = abs(int(tweet['id']) - next_id)
                 message = 'Aw, poo, I was off by %s.' % error
 
-                if len(selfie.ids) >= 2:
+                if len(selfie.tweets) >= 2:
                     diffs = selfie.get_diffs()
                     deviation = stdev(diffs)
                     message += ' That\'s %s standard deviations.' % (error/deviation)
 
                 log.info(message)
 
-            selfie.ids.append(int(tweet['id']))
+            selfie.tweets.append({'time': '', 'id': int(tweet['id'])})
 
             sleep(90)
 
