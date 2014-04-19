@@ -75,8 +75,8 @@ class Tweeter(object):
         )
 
         log.info(
-            '%s tweets, diff variance: %s'
-            % (len(selfie.ids), variance(diffs)),
+            '%s tweets, diff standard deviation: %s'
+            % (len(selfie.ids), deviation),
         )
 
         return selfie.ids[-1] + maybe_next_diff
