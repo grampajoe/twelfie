@@ -271,6 +271,7 @@ class TestTweeter(object):
         test_log_handler.reset()
 
         tweet = tweeter.predict_the_future(9000)
+        tweeter.collect_garbage()
 
         assert tweet == tweeter.api.statuses.update.return_value
         test_log_handler.assert_has_message('Delete failed!', level='error')
@@ -280,6 +281,7 @@ class TestTweeter(object):
         tweeter.api.statuses.destroy.side_effect = Explosion
 
         first_tweet = tweeter.predict_the_future(9000)
+        tweeter.collect_garbage()
 
         tweeter.api.statuses.destroy.assert_has_calls([
             call(id=first_tweet['id'], _method='POST'),
@@ -287,6 +289,7 @@ class TestTweeter(object):
         tweeter.api.statuses.destroy.reset_mock()
 
         second_tweet = tweeter.predict_the_future(8000)
+        tweeter.collect_garbage()
 
         tweeter.api.statuses.destroy.assert_has_calls([
             call(id=first_tweet['id'], _method='POST'),
@@ -295,6 +298,7 @@ class TestTweeter(object):
         tweeter.api.statuses.destroy.reset_mock()
 
         third_tweet = tweeter.predict_the_future(7000)
+        tweeter.collect_garbage()
 
         tweeter.api.statuses.destroy.assert_has_calls([
             call(id=first_tweet['id'], _method='POST'),

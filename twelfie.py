@@ -118,8 +118,6 @@ class Tweeter(object):
         if next_id is None or tweet['id'] != str(next_id):
             selfie.garbage.append(tweet)
 
-        selfie.collect_garbage()
-
         return tweet
 
     def start_tweeting(selfie, sleep=time.sleep):
@@ -127,9 +125,10 @@ class Tweeter(object):
         while True:
             next_id = selfie.guess_next_id()
 
-            log.info('Guessing: %s' % next_id)
-
+            timestamp = time.time()
             tweet = selfie.predict_the_future(next_id)
+
+            log.info('Guessed: %s' % next_id)
 
             if tweet['id'] == str(next_id):
                 selfie.holy_crap(tweet['id'])  # Omg!!!!!!!!!!!
@@ -145,7 +144,8 @@ class Tweeter(object):
 
                 log.info(message)
 
-            selfie.tweets.append({'time': '', 'id': int(tweet['id'])})
+            selfie.collect_garbage()
+            selfie.tweets.append({'time': timestamp, 'id': int(tweet['id'])})
 
             sleep(90)
 
