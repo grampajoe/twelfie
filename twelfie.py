@@ -134,7 +134,7 @@ class Tweeter(object):
                 selfie.holy_crap(tweet['id'])  # Omg!!!!!!!!!!!
                 break
             elif next_id is not None:
-                error = abs(int(tweet['id']) - next_id)
+                error = int(tweet['id']) - next_id
                 message = 'Aw, poo, I was off by %s.' % error
 
                 if len(selfie.tweets) >= 2:
