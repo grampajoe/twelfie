@@ -147,7 +147,7 @@ class Tweeter(object):
             selfie.collect_garbage()
             selfie.tweets.append({'time': timestamp, 'id': int(tweet['id'])})
 
-            sleep(90)
+            sleep(10)
 
 
 if __name__ == '__main__':

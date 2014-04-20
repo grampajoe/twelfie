@@ -206,7 +206,7 @@ class TestTweeter(object):
         assert len(tweeter.tweets) == tweeter.api.statuses.update.call_count
 
         for call in timebomb.mock_calls:
-            assert call == call(90)
+            assert call == call(10)
 
         assert timebomb.call_count == 100
 
