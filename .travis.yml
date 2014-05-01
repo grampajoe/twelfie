@@ -1,6 +1,13 @@
 language: python
-python: "3.4"
+python: '3.4'
 script: python setup.py test
 branches:
   only:
-    - master
+  - master
+deploy:
+  provider: heroku
+  api_key:
+    secure: FI9uMeZV55aJyyZNXa8g3a0KVKZR97gEvXZD4IHCevKzGe0qjgymE7QPbYNaVnG7HM9r2nBwTcU7K6lviiA+cJ9bXJsg2VmNxlUORlhDQZTjiYsZaCsUjpemS3ayHoPuWoFl3gQgXNtgIDx5Wn9wxOpiRT5oRAc5BOT/ncTK7oE=
+  app: boiling-bayou-8098
+  on:
+    repo: grampajoe/twelfie
