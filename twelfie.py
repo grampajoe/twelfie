@@ -74,8 +74,8 @@ class Tweeter(object):
         average = mean(diffs)
 
         maybe_next_diff = random.randint(
-            int(average - deviation),
-            int(average + deviation),
+            int(average - (0.5 * deviation)),
+            int(average + (0.5 * deviation)),
         )
 
         log.info(

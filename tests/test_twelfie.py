@@ -172,8 +172,8 @@ class TestTweeter(object):
         for i in range(1000):
             next_id = tweeter.guess_next_id()
 
-            assert next_id >= tweeter.tweets[-1]['id'] + average - std_deviation
-            assert next_id <= tweeter.tweets[-1]['id'] + average + std_deviation
+            assert next_id >= tweeter.tweets[-1]['id'] + average - (0.5 * std_deviation)
+            assert next_id <= tweeter.tweets[-1]['id'] + average + (0.5 * std_deviation)
 
     def test_guess_first_ids(selfie, tweeter):
         """Should not attempt to guess the first or second ids."""
