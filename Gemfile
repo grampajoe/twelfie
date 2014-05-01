@@ -1,3 +1,5 @@
 source 'https://rubygems.org'
 
-gem 'travis'
+group :development do
+  gem 'travis'
+end
